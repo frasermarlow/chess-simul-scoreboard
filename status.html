@@ -8,16 +8,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <style>
-    .status-badge {
-      display: inline-block;
-      background-color: var(--brand-blue);
-      color: var(--text-white);
-      font-weight: 600;
-      font-size: 0.875rem;
-      padding: 4px 12px;
-      border-radius: 20px;
-    }
-
     .queue-position {
       font-size: 3rem;
       font-weight: 700;
@@ -25,64 +15,51 @@
       line-height: 1.1;
     }
 
-    .board-strip {
+    .activity-strip {
+      width: 100%;
       display: flex;
       gap: 8px;
-      width: 100%;
     }
 
-    .board-strip-item {
+    .activity-box {
       flex: 1;
       background: var(--bg-white);
       border: 1px solid var(--stroke-default);
       border-radius: 8px;
       padding: 10px 8px;
       text-align: center;
-      font-size: 0.75rem;
+      font-size: 0.875rem;
     }
 
-    .board-strip-item .board-label {
+    .activity-box .activity-label {
       font-weight: 700;
       color: var(--text-heading);
       margin-bottom: 4px;
     }
 
-    .board-strip-item .board-player {
-      color: var(--text-body);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    .activity-box .activity-value {
+      color: var(--brand-blue);
+      font-weight: 600;
+      font-size: 1.1rem;
     }
 
-    .queue-count-strip {
-      background: var(--bg-white);
-      border: 1px solid var(--stroke-default);
-      border-radius: 8px;
-      padding: 10px 16px;
-      text-align: center;
-      font-size: 0.875rem;
-      color: var(--text-body);
-      width: 100%;
-    }
-
-    .board-alert {
+    .playing-alert {
       background: linear-gradient(135deg, #3F8CFF, #8B5CF6);
       color: var(--text-white);
       border-radius: 16px;
-      padding: 24px;
+      padding: 32px 24px;
       text-align: center;
       width: 100%;
     }
 
-    .board-alert h2 {
+    .playing-alert h2 {
       color: var(--text-white);
-      font-size: 1.5rem;
-      margin-bottom: 4px;
+      font-size: 1.75rem;
+      margin-bottom: 8px;
     }
 
-    .board-alert .board-number {
-      font-size: 3rem;
-      font-weight: 700;
+    .playing-alert p {
+      color: rgba(255, 255, 255, 0.9);
     }
 
     .moves-input {
@@ -115,33 +92,29 @@
 
       <p class="text-center text-body mb-24">Get ready! The organizer will call you when a board is free.</p>
 
-      <div class="board-strip mb-8">
-        <div class="board-strip-item">
-          <div class="board-label">Board 1</div>
-          <div class="board-player" id="strip-board-1">—</div>
+      <div class="activity-strip mb-8">
+        <div class="activity-box">
+          <div class="activity-label">Playing</div>
+          <div class="activity-value" id="strip-playing">0</div>
         </div>
-        <div class="board-strip-item">
-          <div class="board-label">Board 2</div>
-          <div class="board-player" id="strip-board-2">—</div>
+        <div class="activity-box">
+          <div class="activity-label">In Queue</div>
+          <div class="activity-value" id="strip-queued">0</div>
         </div>
-        <div class="board-strip-item">
-          <div class="board-label">Board 3</div>
-          <div class="board-player" id="strip-board-3">—</div>
+        <div class="activity-box">
+          <div class="activity-label">Completed</div>
+          <div class="activity-value" id="strip-completed">0</div>
         </div>
       </div>
-
-      <div class="queue-count-strip" id="queue-count-strip">Players in queue: —</div>
     </div>
 
-    <!-- Mode B: Playing — Board Assignment Alert -->
+    <!-- Mode B: Playing -->
     <div id="mode-playing" class="hidden" style="width:100%;display:none;">
-      <!-- Sub-view: Board alert -->
+      <!-- Sub-view: Alert -->
       <div id="playing-alert" style="width:100%;">
-        <div class="board-alert mb-24">
+        <div class="playing-alert mb-24">
           <h2>You're up!</h2>
-          <p class="mb-8">Head to</p>
-          <p class="board-number" id="assigned-board-number">—</p>
-          <p>Board</p>
+          <p>Head to the chess board — the organizer will direct you.</p>
         </div>
         <button id="got-it-btn" class="btn btn-primary w-full mt-16">Got it!</button>
       </div>
@@ -165,7 +138,7 @@
   <script type="module">
     import { firebaseConfig } from './firebase-config.js';
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-    import { getDatabase, ref, get, set, push, onValue, update, query, orderByChild, equalTo }
+    import { getDatabase, ref, get, set, push, onValue, update }
       from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
 
     const app = initializeApp(firebaseConfig);
@@ -184,7 +157,6 @@
     const modePlaying = document.getElementById('mode-playing');
     const playerNameDisplay = document.getElementById('player-name-display');
     const queuePositionEl = document.getElementById('queue-position');
-    const assignedBoardEl = document.getElementById('assigned-board-number');
     const gotItBtn = document.getElementById('got-it-btn');
     const playingAlert = document.getElementById('playing-alert');
     const playingEntry = document.getElementById('playing-entry');
@@ -197,16 +169,12 @@
       playerNameDisplay.textContent = playerName || '—';
     }
 
-    let currentBoardNumber = null;
-
     // Switch to Mode B (playing)
-    function showPlayingMode(boardNumber) {
-      currentBoardNumber = boardNumber;
+    function showPlayingMode() {
       modeQueued.classList.add('hidden');
       modeQueued.style.display = 'none';
       modePlaying.classList.remove('hidden');
       modePlaying.style.display = '';
-      assignedBoardEl.textContent = boardNumber || '?';
     }
 
     // "Got it!" button — show move entry form
@@ -223,14 +191,13 @@
     try {
       const snapshot = await get(playerRef);
       if (!snapshot.exists()) {
-        // Player record not found — send back to join
         localStorage.removeItem('chessPlayerId');
         localStorage.removeItem('chessPlayerName');
         window.location.href = 'join.html';
       } else {
         const data = snapshot.val();
         if (data.status === 'playing') {
-          showPlayingMode(data.boardNumber);
+          showPlayingMode();
         } else if (data.status === 'completed') {
           window.location.href = 'thankyou.html';
         }
@@ -244,40 +211,36 @@
       if (!snapshot.exists()) return;
       const data = snapshot.val();
       if (data.status === 'playing') {
-        showPlayingMode(data.boardNumber);
+        showPlayingMode();
       } else if (data.status === 'completed') {
         window.location.href = 'thankyou.html';
       }
     });
 
-    // Listen to full queue to compute position
+    // Listen to full queue to compute position and activity counts
     onValue(ref(db, 'queue'), (snapshot) => {
       if (!snapshot.exists()) {
         queuePositionEl.textContent = '—';
+        document.getElementById('strip-playing').textContent = '0';
+        document.getElementById('strip-queued').textContent = '0';
+        document.getElementById('strip-completed').textContent = '0';
         return;
       }
       const queue = snapshot.val();
-      // Build sorted list of queued players
-      const queued = Object.entries(queue)
+      const entries = Object.entries(queue);
+
+      const queued = entries
         .filter(([, v]) => v.status === 'queued')
         .sort((a, b) => a[1].queuedAt - b[1].queuedAt);
+      const playingCount = entries.filter(([, v]) => v.status === 'playing').length;
+      const completedCount = entries.filter(([, v]) => v.status === 'completed').length;
 
       const position = queued.findIndex(([id]) => id === playerId);
       queuePositionEl.textContent = position >= 0 ? '#' + (position + 1) : '—';
 
-      // Update queue count strip
-      document.getElementById('queue-count-strip').textContent =
-        'Players in queue: ' + queued.length;
-    });
-
-    // Listen to boards for the activity strip
-    onValue(ref(db, 'boards'), (snapshot) => {
-      const boards = snapshot.exists() ? snapshot.val() : {};
-      for (let i = 1; i <= 3; i++) {
-        const el = document.getElementById('strip-board-' + i);
-        const board = boards[i];
-        el.textContent = (board && board.playerName) ? board.playerName : '—';
-      }
+      document.getElementById('strip-playing').textContent = playingCount;
+      document.getElementById('strip-queued').textContent = queued.length;
+      document.getElementById('strip-completed').textContent = completedCount;
     });
 
     // Submit score
@@ -303,7 +266,6 @@
 
       try {
         const name = playerName || 'Unknown';
-        const boardNum = currentBoardNumber;
 
         // 1. Write score to /scores
         const scoreRef = push(ref(db, 'scores'));
@@ -319,36 +281,28 @@
           moves: moves
         });
 
-        // 3. Clear the board
-        if (boardNum) {
-          await set(ref(db, 'boards/' + boardNum), {
-            playerId: null,
-            playerName: null
-          });
+        // 3. Auto-assign: if fewer than 3 playing, promote next queued player
+        const queueSnapshot = await get(ref(db, 'queue'));
+        if (queueSnapshot.exists()) {
+          const allQueue = queueSnapshot.val();
+          const allEntries = Object.entries(allQueue);
+          const playingNow = allEntries.filter(([, v]) => v.status === 'playing').length;
 
-          // 4. Auto-assign next queued player to the freed board
-          const queueSnapshot = await get(ref(db, 'queue'));
-          if (queueSnapshot.exists()) {
-            const allQueue = queueSnapshot.val();
-            const queuedPlayers = Object.entries(allQueue)
+          if (playingNow < 3) {
+            const nextQueued = allEntries
               .filter(([, v]) => v.status === 'queued')
               .sort((a, b) => a[1].queuedAt - b[1].queuedAt);
 
-            if (queuedPlayers.length > 0) {
-              const [nextId, nextData] = queuedPlayers[0];
+            if (nextQueued.length > 0) {
+              const [nextId] = nextQueued[0];
               await update(ref(db, 'queue/' + nextId), {
-                status: 'playing',
-                boardNumber: boardNum
-              });
-              await set(ref(db, 'boards/' + boardNum), {
-                playerId: nextId,
-                playerName: nextData.name
+                status: 'playing'
               });
             }
           }
         }
 
-        // 5. Redirect to thank you
+        // 4. Redirect to thank you
         window.location.href = 'thankyou.html';
       } catch (err) {
         submitError.textContent = 'Something went wrong. Please try again.';

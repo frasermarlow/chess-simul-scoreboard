@@ -1,83 +1,69 @@
 /* === Scoreboard-specific styles (index.html) === */
 
 body.scoreboard {
-  background-color: #1E1E1E;
-  color: #FFFFFF;
+  background-color: #F5F6F7;
+  color: #082247;
   height: 100vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 2vh 2vw;
-}
-
-/* Scanline overlay */
-body.scoreboard::after {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: repeating-linear-gradient(
-    0deg,
-    rgba(0, 0, 0, 0.06) 0px,
-    rgba(0, 0, 0, 0.06) 1px,
-    transparent 1px,
-    transparent 3px
-  );
-  pointer-events: none;
-  z-index: 100;
+  padding: 2.5vh 2vw;
 }
 
 .scoreboard-logo {
-  max-width: 300px;
+  max-width: 400px;
   margin: 0 auto;
 }
 
 .scoreboard-title {
-  font-family: 'Press Start 2P', cursive;
-  font-size: clamp(1rem, 2.5vw, 1.8rem);
-  color: #FFFFFF;
+  font-family: 'Lexend', sans-serif;
+  font-weight: 700;
+  font-size: clamp(1.2rem, 2.5vw, 2rem);
+  color: #082247;
   text-align: center;
-  margin-bottom: 2vh;
-  text-shadow: 0 0 10px rgba(63, 140, 255, 0.5);
-  letter-spacing: 2px;
+  margin-bottom: 2.5vh;
+  letter-spacing: 1px;
 }
 
 .scoreboard-title .chess-icon {
   display: inline;
+  margin: 0 0.3em;
 }
 
 /* Winners Section */
 .winners-section {
   width: 100%;
   max-width: 900px;
-  margin-bottom: 1.5vh;
+  margin-bottom: 2vh;
 }
 
 .section-label {
-  font-family: 'Press Start 2P', cursive;
-  font-size: clamp(0.55rem, 1.2vw, 0.8rem);
-  color: #8390A0;
+  font-family: 'Lexend', sans-serif;
+  font-weight: 600;
+  font-size: clamp(0.7rem, 1.2vw, 0.9rem);
+  color: #5E7493;
   margin-bottom: 1vh;
   letter-spacing: 1px;
+  text-transform: uppercase;
 }
 
 .winner-row {
   display: flex;
   align-items: center;
-  background: #282929;
+  background: #FFFFFF;
   border-left: 4px solid #247EFF;
-  border-radius: 6px;
-  padding: 1.2vh 2vw;
+  border-radius: 8px;
+  padding: 1.4vh 2vw;
   margin-bottom: 0.8vh;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 .winner-rank {
-  font-family: 'Press Start 2P', cursive;
-  font-size: clamp(1rem, 2vw, 1.6rem);
-  color: #8390A0;
+  font-family: 'Lexend', sans-serif;
+  font-weight: 700;
+  font-size: clamp(1.2rem, 2vw, 1.8rem);
+  color: #247EFF;
   min-width: 3.5vw;
   text-align: center;
 }
@@ -85,13 +71,9 @@ body.scoreboard::after {
 .winner-name {
   flex: 1;
   font-family: 'Lexend', sans-serif;
-  font-size: clamp(1.4rem, 3vw, 2.8rem);
+  font-size: clamp(1.6rem, 3vw, 2.8rem);
   font-weight: 700;
-  background: linear-gradient(to right, #3F8CFF, #8B5CF6);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  text-shadow: none;
+  color: #082247;
   padding: 0 1.5vw;
   text-transform: uppercase;
 }
@@ -99,22 +81,24 @@ body.scoreboard::after {
 .winner-moves {
   font-family: 'Share Tech Mono', monospace;
   font-size: clamp(1rem, 2vw, 1.6rem);
-  color: #FFFFFF;
+  color: #5E7493;
   white-space: nowrap;
 }
 
 .winner-row.placeholder .winner-name {
-  background: none;
-  -webkit-text-fill-color: #424758;
-  color: #424758;
+  color: #C0C7D0;
 }
 
 .winner-row.placeholder .winner-moves {
-  color: #424758;
+  color: #C0C7D0;
+}
+
+.winner-row.placeholder {
+  border-left-color: #E8E8E8;
 }
 
 .tie-note {
-  font-family: 'Share Tech Mono', monospace;
+  font-family: 'Lexend', sans-serif;
   font-size: clamp(0.6rem, 1vw, 0.8rem);
   color: #E38E00;
   text-align: center;
@@ -131,14 +115,14 @@ body.scoreboard::after {
 .runner-row {
   display: flex;
   align-items: center;
-  padding: 0.6vh 2vw;
-  border-bottom: 1px solid #3C3C3C;
+  padding: 0.7vh 2vw;
+  border-bottom: 1px solid #E8E8E8;
 }
 
 .runner-rank {
   font-family: 'Share Tech Mono', monospace;
-  font-size: clamp(0.75rem, 1.2vw, 1rem);
-  color: #808080;
+  font-size: clamp(0.8rem, 1.2vw, 1rem);
+  color: #5E7493;
   min-width: 3.5vw;
   text-align: center;
 }
@@ -146,17 +130,17 @@ body.scoreboard::after {
 .runner-name {
   flex: 1;
   font-family: 'Lexend', sans-serif;
-  font-size: clamp(0.85rem, 1.5vw, 1.2rem);
+  font-size: clamp(0.95rem, 1.5vw, 1.3rem);
   font-weight: 500;
-  color: #FFFFFF;
+  color: #082247;
   padding: 0 1.5vw;
   text-transform: uppercase;
 }
 
 .runner-moves {
   font-family: 'Share Tech Mono', monospace;
-  font-size: clamp(0.75rem, 1.2vw, 1rem);
-  color: #8390A0;
+  font-size: clamp(0.8rem, 1.2vw, 1rem);
+  color: #5E7493;
   white-space: nowrap;
 }
 
@@ -173,19 +157,20 @@ body.scoreboard::after {
 .boards-strip {
   display: flex;
   justify-content: center;
-  gap: 2vw;
+  gap: 3vw;
   padding: 1vh 0;
 }
 
 .board-badge {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: clamp(0.65rem, 1.1vw, 0.9rem);
-  color: #8390A0;
+  font-family: 'Lexend', sans-serif;
+  font-size: clamp(0.7rem, 1.1vw, 0.9rem);
+  color: #5E7493;
   text-align: center;
 }
 
 .board-badge .board-label {
-  font-size: clamp(0.5rem, 0.8vw, 0.65rem);
+  font-size: clamp(0.55rem, 0.8vw, 0.7rem);
+  font-weight: 600;
   color: #808080;
   display: block;
   margin-bottom: 0.3vh;
@@ -194,16 +179,17 @@ body.scoreboard::after {
 }
 
 .board-badge .board-player {
-  color: #FFFFFF;
-  font-size: clamp(0.7rem, 1.1vw, 0.95rem);
+  color: #082247;
+  font-weight: 500;
+  font-size: clamp(0.75rem, 1.1vw, 1rem);
 }
 
 .board-badge .board-player.empty {
-  color: #424758;
+  color: #C0C7D0;
 }
 
 .queue-count {
-  font-family: 'Share Tech Mono', monospace;
+  font-family: 'Lexend', sans-serif;
   font-size: clamp(0.6rem, 1vw, 0.8rem);
   color: #808080;
   text-align: center;

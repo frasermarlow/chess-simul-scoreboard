@@ -25,17 +25,17 @@ There is no package.json, no bundler, no test runner, and no linter. Files are s
 | `join.html` | Player name entry & queue registration | Players (mobile, QR target) |
 | `status.html` | Queue position display + move count submission | Players (mobile) |
 | `thankyou.html` | Post-submission confirmation | Players |
-| `admin.html` | Board/queue/score management | Event organizers |
+| `admin.html` | Queue/score management | Event organizers |
 
 ### Firebase Data Model
 
 ```
-/queue/<playerId>    → { name, status, queuedAt, boardNumber, moves }
-/boards/<1|2|3>      → { playerId, playerName }
+/queue/<playerId>    → { name, status, queuedAt, moves }
 /scores/<scoreId>    → { name, moves, completedAt }
 ```
 
 - `status` values: `"queued"` | `"playing"` | `"completed"`
+- Up to 3 players can have `"playing"` status simultaneously (no board assignment — facilitators manage physical boards)
 - All pages use Firebase `onValue()` listeners for real-time sync
 - Firebase config lives in `firebase-config.js`
 
@@ -45,7 +45,7 @@ There is no package.json, no bundler, no test runner, and no linter. Files are s
 - Scoreboard shows top 3 winners + runners-up (4-10), with placeholder rows if fewer than 3 scores
 - Player identity stored in localStorage (`chessPlayerId`, `chessPlayerName`)
 - Duplicate name check on sign-up redirects returning players to `status.html`
-- Board assignment: next queued player auto-assigned to available board
+- Auto-assign: when a player completes, the next queued player is promoted to `"playing"` if fewer than 3 are playing
 
 ## Specification
 
