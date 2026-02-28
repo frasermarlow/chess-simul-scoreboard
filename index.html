@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chess Simul High Scores</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="scoreboard.css">
+</head>
+<body class="scoreboard">
+
+  <img src="altimate-logo.svg" alt="Altimate AI" class="scoreboard-logo">
+
+  <h1 class="scoreboard-title">
+    <span class="chess-icon">&#9823;</span>
+    CHESS SIMUL HIGH SCORES
+    <span class="chess-icon">&#9823;</span>
+  </h1>
+
+  <!-- Winners Section -->
+  <div class="winners-section">
+    <div class="section-label">&#127942; WINNERS &mdash; TOP 3</div>
+    <div id="winners-list"></div>
+    <div id="tie-note" class="tie-note hidden"></div>
+  </div>
+
+  <!-- Runners Up Section -->
+  <div class="runners-section">
+    <div class="section-label">RUNNERS UP</div>
+    <div id="runners-list"></div>
+  </div>
+
+  <!-- Bottom Strip -->
+  <div class="bottom-strip">
+    <div class="boards-strip" id="boards-strip">
+      <div class="board-badge">
+        <span class="board-label">Board 1</span>
+        <span class="board-player empty" id="board-1">&mdash;</span>
+      </div>
+      <div class="board-badge">
+        <span class="board-label">Board 2</span>
+        <span class="board-player empty" id="board-2">&mdash;</span>
+      </div>
+      <div class="board-badge">
+        <span class="board-label">Board 3</span>
+        <span class="board-player empty" id="board-3">&mdash;</span>
+      </div>
+    </div>
+    <div class="queue-count" id="queue-count">Players in queue: 0</div>
+  </div>
+
+  <script type="module">
+    import { firebaseConfig } from './firebase-config.js';
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { getDatabase, ref, onValue }
+      from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // --- Scores listener ---
+    const scoresRef = ref(db, 'scores');
+    onValue(scoresRef, (snapshot) => {
+      const data = snapshot.val();
+      const scores = [];
+      if (data) {
+        for (const key in data) {
+          scores.push(data[key]);
+        }
+      }
+      // Sort: moves DESC, then completedAt ASC
+      scores.sort((a, b) => {
+        if (b.moves !== a.moves) return b.moves - a.moves;
+        return a.completedAt - b.completedAt;
+      });
+      renderScoreboard(scores);
+    });
+
+    function renderScoreboard(scores) {
+      const winnersList = document.getElementById('winners-list');
+      const runnersList = document.getElementById('runners-list');
+      const tieNote = document.getElementById('tie-note');
+
+      // Determine if there's a tie for 3rd place
+      let winnersCount = 3;
+      let hasTie = false;
+      if (scores.length >= 4 && scores[2].moves === scores[3].moves) {
+        winnersCount = 4;
+        hasTie = true;
+      }
+
+      // Build winners HTML
+      let winnersHTML = '';
+      for (let i = 0; i < winnersCount; i++) {
+        if (i < scores.length) {
+          winnersHTML += `
+            <div class="winner-row">
+              <span class="winner-rank">${i + 1}.</span>
+              <span class="winner-name">${escapeHTML(scores[i].name)}</span>
+              <span class="winner-moves">${scores[i].moves} moves</span>
+            </div>`;
+        } else {
+          winnersHTML += `
+            <div class="winner-row placeholder">
+              <span class="winner-rank">${i + 1}.</span>
+              <span class="winner-name">---</span>
+              <span class="winner-moves">--- moves</span>
+            </div>`;
+        }
+      }
+      winnersList.innerHTML = winnersHTML;
+
+      // Tie note
+      if (hasTie) {
+        tieNote.textContent = 'Tie for 3rd — 4 winners!';
+        tieNote.classList.remove('hidden');
+      } else {
+        tieNote.classList.add('hidden');
+      }
+
+      // Build runners-up HTML (next 7 after winners)
+      let runnersHTML = '';
+      const runnersStart = winnersCount;
+      const runnersEnd = Math.min(runnersStart + 7, scores.length);
+      for (let i = runnersStart; i < runnersEnd; i++) {
+        runnersHTML += `
+          <div class="runner-row">
+            <span class="runner-rank">${i + 1}.</span>
+            <span class="runner-name">${escapeHTML(scores[i].name)}</span>
+            <span class="runner-moves">${scores[i].moves} moves</span>
+          </div>`;
+      }
+      runnersList.innerHTML = runnersHTML;
+    }
+
+    function escapeHTML(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    // --- Boards listener ---
+    const boardsRef = ref(db, 'boards');
+    onValue(boardsRef, (snapshot) => {
+      const data = snapshot.val();
+      for (let i = 1; i <= 3; i++) {
+        const el = document.getElementById('board-' + i);
+        const board = data && data[i];
+        if (board && board.playerName) {
+          el.textContent = board.playerName;
+          el.classList.remove('empty');
+        } else {
+          el.innerHTML = '&mdash;';
+          el.classList.add('empty');
+        }
+      }
+    });
+
+    // --- Queue count listener ---
+    const queueRef = ref(db, 'queue');
+    onValue(queueRef, (snapshot) => {
+      const data = snapshot.val();
+      let count = 0;
+      if (data) {
+        for (const key in data) {
+          if (data[key].status === 'queued') count++;
+        }
+      }
+      document.getElementById('queue-count').textContent = 'Players in queue: ' + count;
+    });
+  </script>
+
+</body>
+</html>

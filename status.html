@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Status — Chess Simul</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .status-badge {
+      display: inline-block;
+      background-color: var(--brand-blue);
+      color: var(--text-white);
+      font-weight: 600;
+      font-size: 0.875rem;
+      padding: 4px 12px;
+      border-radius: 20px;
+    }
+
+    .queue-position {
+      font-size: 3rem;
+      font-weight: 700;
+      color: var(--brand-blue);
+      line-height: 1.1;
+    }
+
+    .board-strip {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .board-strip-item {
+      flex: 1;
+      background: var(--bg-white);
+      border: 1px solid var(--stroke-default);
+      border-radius: 8px;
+      padding: 10px 8px;
+      text-align: center;
+      font-size: 0.75rem;
+    }
+
+    .board-strip-item .board-label {
+      font-weight: 700;
+      color: var(--text-heading);
+      margin-bottom: 4px;
+    }
+
+    .board-strip-item .board-player {
+      color: var(--text-body);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .queue-count-strip {
+      background: var(--bg-white);
+      border: 1px solid var(--stroke-default);
+      border-radius: 8px;
+      padding: 10px 16px;
+      text-align: center;
+      font-size: 0.875rem;
+      color: var(--text-body);
+      width: 100%;
+    }
+
+    .board-alert {
+      background: linear-gradient(135deg, #3F8CFF, #8B5CF6);
+      color: var(--text-white);
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+      width: 100%;
+    }
+
+    .board-alert h2 {
+      color: var(--text-white);
+      font-size: 1.5rem;
+      margin-bottom: 4px;
+    }
+
+    .board-alert .board-number {
+      font-size: 3rem;
+      font-weight: 700;
+    }
+
+    .moves-input {
+      font-size: 3rem !important;
+      text-align: center;
+      font-weight: 700;
+      letter-spacing: 4px;
+      padding: 20px 16px !important;
+    }
+
+    .game-over-section h1 {
+      font-size: 1.5rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-container">
+
+    <!-- Mode A: Waiting in Queue -->
+    <div id="mode-queued">
+      <div class="text-center mb-24" style="width:100%;">
+        <p class="text-caption mb-8">Welcome,</p>
+        <h1 id="player-name-display">—</h1>
+      </div>
+
+      <div class="card text-center w-full mb-16">
+        <p class="text-caption mb-8">Your position in the queue</p>
+        <p id="queue-position" class="queue-position">—</p>
+      </div>
+
+      <p class="text-center text-body mb-24">Get ready! The organizer will call you when a board is free.</p>
+
+      <div class="board-strip mb-8">
+        <div class="board-strip-item">
+          <div class="board-label">Board 1</div>
+          <div class="board-player" id="strip-board-1">—</div>
+        </div>
+        <div class="board-strip-item">
+          <div class="board-label">Board 2</div>
+          <div class="board-player" id="strip-board-2">—</div>
+        </div>
+        <div class="board-strip-item">
+          <div class="board-label">Board 3</div>
+          <div class="board-player" id="strip-board-3">—</div>
+        </div>
+      </div>
+
+      <div class="queue-count-strip" id="queue-count-strip">Players in queue: —</div>
+    </div>
+
+    <!-- Mode B: Playing — Board Assignment Alert -->
+    <div id="mode-playing" class="hidden" style="width:100%;display:none;">
+      <!-- Sub-view: Board alert -->
+      <div id="playing-alert" style="width:100%;">
+        <div class="board-alert mb-24">
+          <h2>You're up!</h2>
+          <p class="mb-8">Head to</p>
+          <p class="board-number" id="assigned-board-number">—</p>
+          <p>Board</p>
+        </div>
+        <button id="got-it-btn" class="btn btn-primary w-full mt-16">Got it!</button>
+      </div>
+
+      <!-- Sub-view: Move entry -->
+      <div id="playing-entry" class="hidden" style="width:100%;">
+        <div class="game-over-section text-center mb-24" style="width:100%;">
+          <h1 class="mb-8">Game Over!</h1>
+          <p class="text-body">How many moves did you survive?</p>
+        </div>
+
+        <label for="moves-input" class="mb-8" style="display:block;font-weight:600;text-align:center;">Move Count</label>
+        <input type="number" id="moves-input" class="moves-input mb-8 w-full" min="0" max="999" placeholder="0" inputmode="numeric">
+        <p id="submit-error" class="hidden" style="color:#dc3545;font-size:0.875rem;text-align:center;"></p>
+        <button id="submit-btn" class="btn btn-primary w-full mt-16">Submit My Score</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script type="module">
+    import { firebaseConfig } from './firebase-config.js';
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { getDatabase, ref, get, set, push, onValue, update, query, orderByChild, equalTo }
+      from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // Check localStorage for player identity
+    const playerId = localStorage.getItem('chessPlayerId');
+    const playerName = localStorage.getItem('chessPlayerName');
+
+    if (!playerId) {
+      window.location.href = 'join.html';
+    }
+
+    // DOM references
+    const modeQueued = document.getElementById('mode-queued');
+    const modePlaying = document.getElementById('mode-playing');
+    const playerNameDisplay = document.getElementById('player-name-display');
+    const queuePositionEl = document.getElementById('queue-position');
+    const assignedBoardEl = document.getElementById('assigned-board-number');
+    const gotItBtn = document.getElementById('got-it-btn');
+    const playingAlert = document.getElementById('playing-alert');
+    const playingEntry = document.getElementById('playing-entry');
+    const movesInput = document.getElementById('moves-input');
+    const submitBtn = document.getElementById('submit-btn');
+    const submitError = document.getElementById('submit-error');
+
+    // Set player name
+    if (playerNameDisplay) {
+      playerNameDisplay.textContent = playerName || '—';
+    }
+
+    let currentBoardNumber = null;
+
+    // Switch to Mode B (playing)
+    function showPlayingMode(boardNumber) {
+      currentBoardNumber = boardNumber;
+      modeQueued.classList.add('hidden');
+      modeQueued.style.display = 'none';
+      modePlaying.classList.remove('hidden');
+      modePlaying.style.display = '';
+      assignedBoardEl.textContent = boardNumber || '?';
+    }
+
+    // "Got it!" button — show move entry form
+    gotItBtn.addEventListener('click', () => {
+      playingAlert.classList.add('hidden');
+      playingAlert.style.display = 'none';
+      playingEntry.classList.remove('hidden');
+      playingEntry.style.display = '';
+      movesInput.focus();
+    });
+
+    // Immediately read player status from Firebase on load
+    const playerRef = ref(db, 'queue/' + playerId);
+    try {
+      const snapshot = await get(playerRef);
+      if (!snapshot.exists()) {
+        // Player record not found — send back to join
+        localStorage.removeItem('chessPlayerId');
+        localStorage.removeItem('chessPlayerName');
+        window.location.href = 'join.html';
+      } else {
+        const data = snapshot.val();
+        if (data.status === 'playing') {
+          showPlayingMode(data.boardNumber);
+        } else if (data.status === 'completed') {
+          window.location.href = 'thankyou.html';
+        }
+      }
+    } catch (e) {
+      // Continue with listener
+    }
+
+    // Attach real-time listener for player status changes
+    onValue(playerRef, (snapshot) => {
+      if (!snapshot.exists()) return;
+      const data = snapshot.val();
+      if (data.status === 'playing') {
+        showPlayingMode(data.boardNumber);
+      } else if (data.status === 'completed') {
+        window.location.href = 'thankyou.html';
+      }
+    });
+
+    // Listen to full queue to compute position
+    onValue(ref(db, 'queue'), (snapshot) => {
+      if (!snapshot.exists()) {
+        queuePositionEl.textContent = '—';
+        return;
+      }
+      const queue = snapshot.val();
+      // Build sorted list of queued players
+      const queued = Object.entries(queue)
+        .filter(([, v]) => v.status === 'queued')
+        .sort((a, b) => a[1].queuedAt - b[1].queuedAt);
+
+      const position = queued.findIndex(([id]) => id === playerId);
+      queuePositionEl.textContent = position >= 0 ? '#' + (position + 1) : '—';
+
+      // Update queue count strip
+      document.getElementById('queue-count-strip').textContent =
+        'Players in queue: ' + queued.length;
+    });
+
+    // Listen to boards for the activity strip
+    onValue(ref(db, 'boards'), (snapshot) => {
+      const boards = snapshot.exists() ? snapshot.val() : {};
+      for (let i = 1; i <= 3; i++) {
+        const el = document.getElementById('strip-board-' + i);
+        const board = boards[i];
+        el.textContent = (board && board.playerName) ? board.playerName : '—';
+      }
+    });
+
+    // Submit score
+    submitBtn.addEventListener('click', async () => {
+      submitError.classList.add('hidden');
+
+      const movesVal = movesInput.value.trim();
+      if (movesVal === '' || isNaN(parseInt(movesVal, 10))) {
+        submitError.textContent = 'Please enter a valid number of moves.';
+        submitError.classList.remove('hidden');
+        return;
+      }
+
+      const moves = parseInt(movesVal, 10);
+      if (moves < 0 || moves > 999) {
+        submitError.textContent = 'Moves must be between 0 and 999.';
+        submitError.classList.remove('hidden');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting...';
+
+      try {
+        const name = playerName || 'Unknown';
+        const boardNum = currentBoardNumber;
+
+        // 1. Write score to /scores
+        const scoreRef = push(ref(db, 'scores'));
+        await set(scoreRef, {
+          name: name,
+          moves: moves,
+          completedAt: Date.now()
+        });
+
+        // 2. Update player status to completed
+        await update(ref(db, 'queue/' + playerId), {
+          status: 'completed',
+          moves: moves
+        });
+
+        // 3. Clear the board
+        if (boardNum) {
+          await set(ref(db, 'boards/' + boardNum), {
+            playerId: null,
+            playerName: null
+          });
+
+          // 4. Auto-assign next queued player to the freed board
+          const queueSnapshot = await get(ref(db, 'queue'));
+          if (queueSnapshot.exists()) {
+            const allQueue = queueSnapshot.val();
+            const queuedPlayers = Object.entries(allQueue)
+              .filter(([, v]) => v.status === 'queued')
+              .sort((a, b) => a[1].queuedAt - b[1].queuedAt);
+
+            if (queuedPlayers.length > 0) {
+              const [nextId, nextData] = queuedPlayers[0];
+              await update(ref(db, 'queue/' + nextId), {
+                status: 'playing',
+                boardNumber: boardNum
+              });
+              await set(ref(db, 'boards/' + boardNum), {
+                playerId: nextId,
+                playerName: nextData.name
+              });
+            }
+          }
+        }
+
+        // 5. Redirect to thank you
+        window.location.href = 'thankyou.html';
+      } catch (err) {
+        submitError.textContent = 'Something went wrong. Please try again.';
+        submitError.classList.remove('hidden');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit My Score';
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Join the Chess Simul</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="page-container">
+    <img src="altimate-logo.svg" alt="Altimate AI" class="logo logo-sm mb-24">
+
+    <h1 class="text-center mb-8">Chess Simul Challenge</h1>
+    <p class="text-center text-body mb-24">Enter your name to join the queue and take on the champion!</p>
+
+    <form id="join-form" class="w-full" novalidate>
+      <label for="player-name" class="mb-8" style="display:block;font-weight:600;">Your Name</label>
+      <input type="text" id="player-name" placeholder="e.g. Jane Smith" minlength="2" maxlength="30" required class="mb-8 w-full">
+      <p id="error-msg" class="hidden" style="color:#dc3545;font-size:0.875rem;"></p>
+      <button type="submit" id="join-btn" class="btn btn-primary w-full mt-16">Join the Queue!</button>
+    </form>
+  </div>
+
+  <script type="module">
+    import { firebaseConfig } from './firebase-config.js';
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { getDatabase, ref, get, push, set }
+      from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // Check if player already has an active session
+    const existingId = localStorage.getItem('chessPlayerId');
+    if (existingId) {
+      try {
+        const snapshot = await get(ref(db, 'queue/' + existingId));
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          if (data.status === 'queued' || data.status === 'playing') {
+            window.location.href = 'status.html';
+          }
+        }
+      } catch (e) {
+        // If check fails, let the player sign up again
+      }
+    }
+
+    const form = document.getElementById('join-form');
+    const nameInput = document.getElementById('player-name');
+    const errorMsg = document.getElementById('error-msg');
+    const joinBtn = document.getElementById('join-btn');
+
+    function showError(msg) {
+      errorMsg.textContent = msg;
+      errorMsg.classList.remove('hidden');
+    }
+
+    function hideError() {
+      errorMsg.classList.add('hidden');
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideError();
+
+      const name = nameInput.value.trim();
+      if (name.length < 2) {
+        showError('Name must be at least 2 characters.');
+        return;
+      }
+      if (name.length > 30) {
+        showError('Name must be 30 characters or fewer.');
+        return;
+      }
+
+      joinBtn.disabled = true;
+      joinBtn.textContent = 'Joining...';
+
+      try {
+        const newRef = push(ref(db, 'queue'));
+        const playerId = newRef.key;
+
+        await set(newRef, {
+          name: name,
+          status: 'queued',
+          queuedAt: Date.now(),
+          boardNumber: null,
+          moves: null
+        });
+
+        localStorage.setItem('chessPlayerId', playerId);
+        localStorage.setItem('chessPlayerName', name);
+        window.location.href = 'status.html';
+      } catch (err) {
+        showError('Something went wrong. Please try again.');
+        joinBtn.disabled = false;
+        joinBtn.textContent = 'Join the Queue!';
+      }
+    });
+  </script>
+</body>
+</html>

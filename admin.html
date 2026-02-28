@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Chess Simul Scoreboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .admin-container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 24px 20px 48px;
+    }
+    .admin-container h1 {
+      font-size: 1.5rem;
+      margin-bottom: 24px;
+    }
+    section {
+      margin-bottom: 32px;
+    }
+    section h2 {
+      font-size: 1.15rem;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--stroke-default);
+    }
+    .board-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 14px 16px;
+      margin-bottom: 8px;
+    }
+    .board-card .board-label {
+      font-weight: 700;
+      min-width: 70px;
+    }
+    .board-card .player-name {
+      flex: 1;
+      color: var(--text-body);
+    }
+    .board-card .player-name.empty {
+      color: var(--text-muted);
+      font-style: italic;
+    }
+    .board-card input[type="number"] {
+      width: 80px;
+      min-height: 40px;
+      padding: 8px 10px;
+    }
+    .board-card .btn {
+      padding: 8px 16px;
+      min-height: 40px;
+      font-size: 0.875rem;
+    }
+    .queue-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 10px 16px;
+      margin-bottom: 6px;
+    }
+    .queue-item .queue-name {
+      flex: 1;
+      font-weight: 500;
+    }
+    .queue-item .queue-time {
+      color: var(--text-caption);
+      font-size: 0.8rem;
+    }
+    .queue-item select {
+      width: 120px;
+      min-height: 40px;
+      padding: 8px 10px;
+    }
+    .queue-item .btn {
+      padding: 8px 14px;
+      min-height: 40px;
+      font-size: 0.875rem;
+    }
+    .queue-empty {
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 12px 0;
+    }
+    .score-form {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+    .score-form .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .score-form .field label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-body);
+    }
+    .score-form input {
+      min-height: 40px;
+      padding: 8px 10px;
+    }
+    .score-form .btn {
+      padding: 8px 20px;
+      min-height: 40px;
+      font-size: 0.875rem;
+    }
+    .reset-section {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .reset-section .btn {
+      padding: 10px 20px;
+      font-size: 0.875rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-container">
+    <h1>Admin Panel</h1>
+
+    <!-- Section A: Active Boards -->
+    <section>
+      <h2>Active Boards</h2>
+      <div id="boards-list"></div>
+    </section>
+
+    <!-- Section B: Queue -->
+    <section>
+      <h2>Queue</h2>
+      <div id="queue-list"></div>
+    </section>
+
+    <!-- Section C: Score Entry -->
+    <section>
+      <h2>Score Entry</h2>
+      <div class="score-form">
+        <div class="field">
+          <label for="score-name">Player Name</label>
+          <input type="text" id="score-name" placeholder="Name" style="width:200px;">
+        </div>
+        <div class="field">
+          <label for="score-moves">Moves</label>
+          <input type="number" id="score-moves" placeholder="#" min="0" max="999" style="width:90px;">
+        </div>
+        <button class="btn btn-primary" id="score-submit-btn">Add Score</button>
+      </div>
+    </section>
+
+    <!-- Section D: Reset -->
+    <section>
+      <h2>Reset</h2>
+      <div class="reset-section">
+        <button class="btn btn-danger" id="reset-scores-btn">Reset Scoreboard</button>
+        <button class="btn btn-danger" id="reset-all-btn">Reset Everything</button>
+      </div>
+    </section>
+  </div>
+
+  <script type="module">
+    import { firebaseConfig } from './firebase-config.js';
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { getDatabase, ref, set, push, onValue, update, remove, get, query, orderByChild, equalTo }
+      from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // --- Auto-assignment helper ---
+    async function autoAssignBoard(boardNumber) {
+      const queueSnap = await get(query(ref(db, 'queue'), orderByChild('status'), equalTo('queued')));
+      if (!queueSnap.exists()) return;
+
+      let oldest = null;
+      let oldestId = null;
+      queueSnap.forEach(child => {
+        const val = child.val();
+        if (!oldest || val.queuedAt < oldest.queuedAt) {
+          oldest = val;
+          oldestId = child.key;
+        }
+      });
+
+      if (!oldestId) return;
+
+      const updates = {};
+      updates['queue/' + oldestId + '/status'] = 'playing';
+      updates['queue/' + oldestId + '/boardNumber'] = boardNumber;
+      updates['boards/' + boardNumber + '/playerId'] = oldestId;
+      updates['boards/' + boardNumber + '/playerName'] = oldest.name;
+      await update(ref(db), updates);
+    }
+
+    // --- Section A: Active Boards ---
+    const boardsList = document.getElementById('boards-list');
+
+    onValue(ref(db, 'boards'), (snapshot) => {
+      boardsList.innerHTML = '';
+      const boards = snapshot.val() || {};
+
+      for (let i = 1; i <= 3; i++) {
+        const board = boards[i] || {};
+        const hasPlayer = board.playerId && board.playerName;
+
+        const card = document.createElement('div');
+        card.className = 'card board-card';
+
+        const label = document.createElement('span');
+        label.className = 'board-label';
+        label.textContent = 'Board ' + i;
+
+        const name = document.createElement('span');
+        name.className = 'player-name' + (hasPlayer ? '' : ' empty');
+        name.textContent = hasPlayer ? board.playerName : 'Empty';
+
+        card.appendChild(label);
+        card.appendChild(name);
+
+        if (hasPlayer) {
+          const movesInput = document.createElement('input');
+          movesInput.type = 'number';
+          movesInput.min = '0';
+          movesInput.max = '999';
+          movesInput.placeholder = 'Moves';
+
+          const completeBtn = document.createElement('button');
+          completeBtn.className = 'btn btn-primary';
+          completeBtn.textContent = 'Complete';
+          completeBtn.addEventListener('click', async () => {
+            const moves = parseInt(movesInput.value, 10);
+            if (isNaN(moves) || moves < 0) {
+              alert('Enter a valid move count.');
+              return;
+            }
+            completeBtn.disabled = true;
+            try {
+              // Write score
+              const scoreRef = push(ref(db, 'scores'));
+              await set(scoreRef, {
+                name: board.playerName,
+                moves: moves,
+                completedAt: Date.now()
+              });
+              // Update queue entry
+              await update(ref(db, 'queue/' + board.playerId), {
+                status: 'completed',
+                moves: moves
+              });
+              // Clear board
+              await set(ref(db, 'boards/' + i), { playerId: null, playerName: null });
+              // Auto-assign next
+              await autoAssignBoard(i);
+            } catch (err) {
+              alert('Error completing board: ' + err.message);
+            }
+            completeBtn.disabled = false;
+          });
+
+          const clearBtn = document.createElement('button');
+          clearBtn.className = 'btn btn-secondary';
+          clearBtn.textContent = 'Clear';
+          clearBtn.addEventListener('click', async () => {
+            clearBtn.disabled = true;
+            try {
+              // Update queue status to completed (no score)
+              await update(ref(db, 'queue/' + board.playerId), {
+                status: 'completed'
+              });
+              // Clear board
+              await set(ref(db, 'boards/' + i), { playerId: null, playerName: null });
+              // Auto-assign next
+              await autoAssignBoard(i);
+            } catch (err) {
+              alert('Error clearing board: ' + err.message);
+            }
+            clearBtn.disabled = false;
+          });
+
+          card.appendChild(movesInput);
+          card.appendChild(completeBtn);
+          card.appendChild(clearBtn);
+        }
+
+        boardsList.appendChild(card);
+      }
+    });
+
+    // --- Section B: Queue ---
+    const queueList = document.getElementById('queue-list');
+
+    onValue(ref(db, 'queue'), (snapshot) => {
+      queueList.innerHTML = '';
+      const data = snapshot.val() || {};
+
+      const queued = Object.entries(data)
+        .filter(([, v]) => v.status === 'queued')
+        .sort((a, b) => a[1].queuedAt - b[1].queuedAt);
+
+      if (queued.length === 0) {
+        const empty = document.createElement('p');
+        empty.className = 'queue-empty';
+        empty.textContent = 'No players in queue.';
+        queueList.appendChild(empty);
+        return;
+      }
+
+      queued.forEach(([id, player]) => {
+        const item = document.createElement('div');
+        item.className = 'card queue-item';
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'queue-name';
+        nameSpan.textContent = player.name;
+
+        const timeSpan = document.createElement('span');
+        timeSpan.className = 'queue-time';
+        timeSpan.textContent = new Date(player.queuedAt).toLocaleTimeString();
+
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'btn btn-danger';
+        removeBtn.textContent = 'Remove';
+        removeBtn.addEventListener('click', async () => {
+          await remove(ref(db, 'queue/' + id));
+        });
+
+        const select = document.createElement('select');
+        for (let b = 1; b <= 3; b++) {
+          const opt = document.createElement('option');
+          opt.value = b;
+          opt.textContent = 'Board ' + b;
+          select.appendChild(opt);
+        }
+
+        const assignBtn = document.createElement('button');
+        assignBtn.className = 'btn btn-primary';
+        assignBtn.textContent = 'Assign';
+        assignBtn.addEventListener('click', async () => {
+          const boardNum = parseInt(select.value, 10);
+          assignBtn.disabled = true;
+          try {
+            const updates = {};
+            updates['queue/' + id + '/status'] = 'playing';
+            updates['queue/' + id + '/boardNumber'] = boardNum;
+            updates['boards/' + boardNum + '/playerId'] = id;
+            updates['boards/' + boardNum + '/playerName'] = player.name;
+            await update(ref(db), updates);
+          } catch (err) {
+            alert('Error assigning player: ' + err.message);
+          }
+          assignBtn.disabled = false;
+        });
+
+        item.appendChild(nameSpan);
+        item.appendChild(timeSpan);
+        item.appendChild(removeBtn);
+        item.appendChild(select);
+        item.appendChild(assignBtn);
+        queueList.appendChild(item);
+      });
+    });
+
+    // --- Section C: Score Entry ---
+    document.getElementById('score-submit-btn').addEventListener('click', async () => {
+      const nameInput = document.getElementById('score-name');
+      const movesInput = document.getElementById('score-moves');
+      const name = nameInput.value.trim();
+      const moves = parseInt(movesInput.value, 10);
+
+      if (!name) {
+        alert('Enter a player name.');
+        return;
+      }
+      if (isNaN(moves) || moves < 0) {
+        alert('Enter a valid move count.');
+        return;
+      }
+
+      try {
+        const scoreRef = push(ref(db, 'scores'));
+        await set(scoreRef, {
+          name: name,
+          moves: moves,
+          completedAt: Date.now()
+        });
+        nameInput.value = '';
+        movesInput.value = '';
+      } catch (err) {
+        alert('Error adding score: ' + err.message);
+      }
+    });
+
+    // --- Section D: Reset ---
+    document.getElementById('reset-scores-btn').addEventListener('click', async () => {
+      if (!confirm('Are you sure? This will clear all scores. This cannot be undone.')) return;
+      await remove(ref(db, 'scores'));
+    });
+
+    document.getElementById('reset-all-btn').addEventListener('click', async () => {
+      if (!confirm('Are you sure? This will clear ALL scores, queue entries, and board assignments. This cannot be undone.')) return;
+      await remove(ref(db, 'scores'));
+      await remove(ref(db, 'queue'));
+      await set(ref(db, 'boards'), {
+        1: { playerId: null, playerName: null },
+        2: { playerId: null, playerName: null },
+        3: { playerId: null, playerName: null }
+      });
+    });
+  </script>
+</body>
+</html>
