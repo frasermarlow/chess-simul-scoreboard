@@ -26,10 +26,16 @@
     <div id="tie-note" class="tie-note hidden"></div>
   </div>
 
-  <!-- Runners Up Section -->
-  <div class="runners-section">
-    <div class="section-label">RUNNERS UP</div>
-    <div id="runners-list"></div>
+  <!-- Runners Up + QR Code Row -->
+  <div style="display: flex; gap: 2vw; width: 100%; max-width: 900px; margin-bottom: 1.5vh; align-items: flex-start;">
+    <div class="runners-section" style="flex: 2; margin-bottom: 0;">
+      <div class="section-label">RUNNERS UP</div>
+      <div id="runners-list"></div>
+    </div>
+    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 1vh;">
+      <img src="chess-simul.png" alt="Scan to join" style="width: 100%; height: auto; border-radius: 8px;">
+      <span style="font-family: 'Lexend', sans-serif; font-weight: 600; font-size: clamp(0.7rem, 1.2vw, 1rem); color: #5E7493; text-align: center;">Scan to join!</span>
+    </div>
   </div>
 
   <!-- Bottom Strip -->
@@ -43,10 +49,6 @@
         <span class="board-label">In Queue</span>
         <span class="board-player" id="queue-count">0</span>
       </div>
-    </div>
-    <div style="display: flex; flex-direction: column; align-items: center; gap: 1vh; margin-top: 0.8vh;">
-      <img src="chess-simul.png" alt="Scan to join" style="width: min(45vw, 400px); height: auto; border-radius: 8px;">
-      <span style="font-family: 'Lexend', sans-serif; font-weight: 600; font-size: clamp(0.7rem, 1.2vw, 1rem); color: #5E7493;">Scan to join the queue!</span>
     </div>
   </div>
 
