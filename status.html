@@ -128,6 +128,11 @@
 
         <label for="moves-input" class="mb-8" style="display:block;font-weight:600;text-align:center;">Move Count</label>
         <input type="number" id="moves-input" class="moves-input mb-8 w-full" min="0" max="999" placeholder="0" inputmode="numeric">
+        <div style="display:flex; gap:8px; width:100%; margin-top:16px;">
+          <button id="btn-won" class="btn btn-secondary w-full" style="flex:1;" type="button">👑 I Won!</button>
+          <button id="btn-drew" class="btn btn-secondary w-full" style="flex:1;" type="button">🤝 I Drew!</button>
+        </div>
+        <p id="outcome-display" class="text-center text-caption mt-8 hidden"></p>
         <p id="submit-error" class="hidden" style="color:#dc3545;font-size:0.875rem;text-align:center;"></p>
         <button id="submit-btn" class="btn btn-primary w-full mt-16">Submit My Score</button>
       </div>
@@ -243,6 +248,36 @@
       document.getElementById('strip-completed').textContent = completedCount;
     });
 
+    // Outcome selection
+    let selectedOutcome = 'lost';
+    const btnWon = document.getElementById('btn-won');
+    const btnDrew = document.getElementById('btn-drew');
+    const outcomeDisplay = document.getElementById('outcome-display');
+
+    function setOutcome(outcome) {
+      selectedOutcome = outcome;
+      btnWon.classList.toggle('btn-primary', outcome === 'won');
+      btnWon.classList.toggle('btn-secondary', outcome !== 'won');
+      btnDrew.classList.toggle('btn-primary', outcome === 'drew');
+      btnDrew.classList.toggle('btn-secondary', outcome !== 'drew');
+      if (outcome === 'won') {
+        outcomeDisplay.textContent = '👑 +50 bonus points!';
+        outcomeDisplay.classList.remove('hidden');
+      } else if (outcome === 'drew') {
+        outcomeDisplay.textContent = '🤝 +25 bonus points!';
+        outcomeDisplay.classList.remove('hidden');
+      } else {
+        outcomeDisplay.classList.add('hidden');
+      }
+    }
+
+    btnWon.addEventListener('click', () => {
+      setOutcome(selectedOutcome === 'won' ? 'lost' : 'won');
+    });
+    btnDrew.addEventListener('click', () => {
+      setOutcome(selectedOutcome === 'drew' ? 'lost' : 'drew');
+    });
+
     // Submit score
     submitBtn.addEventListener('click', async () => {
       submitError.classList.add('hidden');
@@ -268,12 +303,13 @@
         const name = playerName || 'Unknown';
 
         // 1. Write score to /scores
+        const bonus = selectedOutcome === 'won' ? 50 : selectedOutcome === 'drew' ? 25 : 0;
         const scoreRef = push(ref(db, 'scores'));
         await set(scoreRef, {
           name: name,
           moves: moves,
-          outcome: 'lost',
-          rankingScore: moves,
+          outcome: selectedOutcome,
+          rankingScore: moves + bonus,
           completedAt: Date.now()
         });
 
