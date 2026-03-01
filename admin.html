@@ -105,6 +105,33 @@
       min-height: 40px;
       font-size: 0.875rem;
     }
+    .score-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 10px 16px;
+      margin-bottom: 6px;
+    }
+    .score-item .score-name {
+      flex: 1;
+      font-weight: 500;
+    }
+    .score-item .score-moves {
+      color: var(--text-body);
+      font-size: 0.875rem;
+    }
+    .score-item select {
+      width: 100px;
+      min-height: 36px;
+      padding: 6px 8px;
+      font-size: 0.8rem;
+    }
+    .score-item .btn {
+      padding: 6px 12px;
+      min-height: 36px;
+      font-size: 0.8rem;
+    }
     .reset-section {
       display: flex;
       gap: 12px;
@@ -156,7 +183,13 @@
       </div>
     </section>
 
-    <!-- Section D: Reset -->
+    <!-- Section D: Submitted Scores -->
+    <section>
+      <h2>Submitted Scores</h2>
+      <div id="scores-list"></div>
+    </section>
+
+    <!-- Section E: Reset -->
     <section>
       <h2>Reset</h2>
       <div class="reset-section">
@@ -386,7 +419,88 @@
       }
     });
 
-    // --- Section D: Reset ---
+    // --- Section D: Submitted Scores ---
+    const scoresList = document.getElementById('scores-list');
+
+    onValue(ref(db, 'scores'), (snapshot) => {
+      scoresList.innerHTML = '';
+      const data = snapshot.val() || {};
+      const scores = Object.entries(data)
+        .map(([id, s]) => ({ id, ...s }))
+        .sort((a, b) => {
+          const aRank = a.rankingScore != null ? a.rankingScore : a.moves;
+          const bRank = b.rankingScore != null ? b.rankingScore : b.moves;
+          if (bRank !== aRank) return bRank - aRank;
+          return a.completedAt - b.completedAt;
+        });
+
+      if (scores.length === 0) {
+        const empty = document.createElement('p');
+        empty.className = 'empty-state';
+        empty.textContent = 'No scores yet.';
+        scoresList.appendChild(empty);
+        return;
+      }
+
+      scores.forEach((score) => {
+        const item = document.createElement('div');
+        item.className = 'card score-item';
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'score-name';
+        const icon = score.outcome === 'won' ? '👑 ' : score.outcome === 'drew' ? '🤝 ' : '';
+        nameSpan.textContent = icon + score.name;
+
+        const movesSpan = document.createElement('span');
+        movesSpan.className = 'score-moves';
+        const bonus = score.outcome === 'won' ? ' (+50)' : score.outcome === 'drew' ? ' (+25)' : '';
+        movesSpan.textContent = score.moves + ' moves' + bonus;
+
+        const outcomeSelect = document.createElement('select');
+        ['lost', 'won', 'drew'].forEach(val => {
+          const opt = document.createElement('option');
+          opt.value = val;
+          opt.textContent = val.charAt(0).toUpperCase() + val.slice(1);
+          if (val === (score.outcome || 'lost')) opt.selected = true;
+          outcomeSelect.appendChild(opt);
+        });
+
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'btn btn-primary';
+        saveBtn.textContent = 'Save';
+        saveBtn.addEventListener('click', async () => {
+          const newOutcome = outcomeSelect.value;
+          const newBonus = newOutcome === 'won' ? 50 : newOutcome === 'drew' ? 25 : 0;
+          saveBtn.disabled = true;
+          try {
+            await update(ref(db, 'scores/' + score.id), {
+              outcome: newOutcome,
+              rankingScore: score.moves + newBonus
+            });
+          } catch (err) {
+            alert('Error: ' + err.message);
+          }
+          saveBtn.disabled = false;
+        });
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'btn btn-danger';
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.addEventListener('click', async () => {
+          if (!confirm('Delete score for ' + score.name + '?')) return;
+          await remove(ref(db, 'scores/' + score.id));
+        });
+
+        item.appendChild(nameSpan);
+        item.appendChild(movesSpan);
+        item.appendChild(outcomeSelect);
+        item.appendChild(saveBtn);
+        item.appendChild(deleteBtn);
+        scoresList.appendChild(item);
+      });
+    });
+
+    // --- Section E: Reset ---
     document.getElementById('reset-scores-btn').addEventListener('click', async () => {
       if (!confirm('Are you sure? This will clear all scores. This cannot be undone.')) return;
       await remove(ref(db, 'scores'));
