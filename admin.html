@@ -236,92 +236,114 @@
       const playing = Object.entries(data)
         .filter(([, v]) => v.status === 'playing');
 
-      if (playing.length === 0) {
-        const empty = document.createElement('p');
-        empty.className = 'empty-state';
-        empty.textContent = 'No players currently playing.';
-        playingList.appendChild(empty);
+      // Always show 3 slots
+      for (let slot = 0; slot < 3; slot++) {
+        if (slot < playing.length) {
+          const [id, player] = playing[slot];
+          renderPlayerSlot(slot + 1, id, player);
+        } else {
+          const card = document.createElement('div');
+          card.className = 'card player-card';
+          const label = document.createElement('span');
+          label.style.fontWeight = '700';
+          label.style.minWidth = '70px';
+          label.textContent = 'Slot ' + (slot + 1);
+          const empty = document.createElement('span');
+          empty.className = 'player-name';
+          empty.style.color = 'var(--text-muted)';
+          empty.style.fontStyle = 'italic';
+          empty.textContent = 'Open';
+          card.appendChild(label);
+          card.appendChild(empty);
+          playingList.appendChild(card);
+        }
       }
-
-      playing.forEach(([id, player]) => {
-        const card = document.createElement('div');
-        card.className = 'card player-card';
-
-        const name = document.createElement('span');
-        name.className = 'player-name';
-        name.textContent = player.name;
-
-        const movesInput = document.createElement('input');
-        movesInput.type = 'number';
-        movesInput.min = '0';
-        movesInput.max = '999';
-        movesInput.placeholder = 'Moves';
-
-        const outcomeSelect = document.createElement('select');
-        ['lost', 'won', 'drew'].forEach(val => {
-          const opt = document.createElement('option');
-          opt.value = val;
-          opt.textContent = val.charAt(0).toUpperCase() + val.slice(1);
-          outcomeSelect.appendChild(opt);
-        });
-
-        const completeBtn = document.createElement('button');
-        completeBtn.className = 'btn btn-primary';
-        completeBtn.textContent = 'Complete';
-        completeBtn.addEventListener('click', async () => {
-          const moves = parseInt(movesInput.value, 10);
-          if (isNaN(moves) || moves < 0) {
-            alert('Enter a valid move count.');
-            return;
-          }
-          const outcome = outcomeSelect.value;
-          const bonus = outcome === 'won' ? 50 : outcome === 'drew' ? 25 : 0;
-          completeBtn.disabled = true;
-          try {
-            const scoreRef = push(ref(db, 'scores'));
-            await set(scoreRef, {
-              name: player.name,
-              moves: moves,
-              outcome: outcome,
-              rankingScore: moves + bonus,
-              completedAt: Date.now()
-            });
-            await update(ref(db, 'queue/' + id), {
-              status: 'completed',
-              moves: moves
-            });
-            await autoAssign();
-          } catch (err) {
-            alert('Error: ' + err.message);
-          }
-          completeBtn.disabled = false;
-        });
-
-        const clearBtn = document.createElement('button');
-        clearBtn.className = 'btn btn-secondary';
-        clearBtn.textContent = 'Clear';
-        clearBtn.addEventListener('click', async () => {
-          clearBtn.disabled = true;
-          try {
-            await update(ref(db, 'queue/' + id), { status: 'completed' });
-            await autoAssign();
-          } catch (err) {
-            alert('Error: ' + err.message);
-          }
-          clearBtn.disabled = false;
-        });
-
-        card.appendChild(name);
-        card.appendChild(movesInput);
-        card.appendChild(outcomeSelect);
-        card.appendChild(completeBtn);
-        card.appendChild(clearBtn);
-        playingList.appendChild(card);
-      });
 
       // --- Also render queue list from same listener ---
       renderQueue(data);
     });
+
+    function renderPlayerSlot(slotNum, id, player) {
+      const card = document.createElement('div');
+      card.className = 'card player-card';
+
+      const label = document.createElement('span');
+      label.style.fontWeight = '700';
+      label.style.minWidth = '70px';
+      label.textContent = 'Slot ' + slotNum;
+
+      const name = document.createElement('span');
+      name.className = 'player-name';
+      name.textContent = player.name;
+
+      const movesInput = document.createElement('input');
+      movesInput.type = 'number';
+      movesInput.min = '0';
+      movesInput.max = '999';
+      movesInput.placeholder = 'Moves';
+
+      const outcomeSelect = document.createElement('select');
+      ['lost', 'won', 'drew'].forEach(val => {
+        const opt = document.createElement('option');
+        opt.value = val;
+        opt.textContent = val.charAt(0).toUpperCase() + val.slice(1);
+        outcomeSelect.appendChild(opt);
+      });
+
+      const completeBtn = document.createElement('button');
+      completeBtn.className = 'btn btn-primary';
+      completeBtn.textContent = 'Complete';
+      completeBtn.addEventListener('click', async () => {
+        const moves = parseInt(movesInput.value, 10);
+        if (isNaN(moves) || moves < 0) {
+          alert('Enter a valid move count.');
+          return;
+        }
+        const outcome = outcomeSelect.value;
+        const bonus = outcome === 'won' ? 50 : outcome === 'drew' ? 25 : 0;
+        completeBtn.disabled = true;
+        try {
+          const scoreRef = push(ref(db, 'scores'));
+          await set(scoreRef, {
+            name: player.name,
+            moves: moves,
+            outcome: outcome,
+            rankingScore: moves + bonus,
+            completedAt: Date.now()
+          });
+          await update(ref(db, 'queue/' + id), {
+            status: 'completed',
+            moves: moves
+          });
+          await autoAssign();
+        } catch (err) {
+          alert('Error: ' + err.message);
+        }
+        completeBtn.disabled = false;
+      });
+
+      const clearBtn = document.createElement('button');
+      clearBtn.className = 'btn btn-secondary';
+      clearBtn.textContent = 'Clear';
+      clearBtn.addEventListener('click', async () => {
+        clearBtn.disabled = true;
+        try {
+          await update(ref(db, 'queue/' + id), { status: 'completed' });
+          await autoAssign();
+        } catch (err) {
+          alert('Error: ' + err.message);
+        }
+        clearBtn.disabled = false;
+      });
+
+      card.appendChild(label);
+      card.appendChild(name);
+      card.appendChild(movesInput);
+      card.appendChild(outcomeSelect);
+      card.appendChild(completeBtn);
+      card.appendChild(clearBtn);
+      playingList.appendChild(card);
+    }
 
     // --- Section B: Queue ---
     const queueList = document.getElementById('queue-list');
