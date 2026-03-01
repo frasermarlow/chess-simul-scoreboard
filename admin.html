@@ -189,7 +189,20 @@
       <div id="scores-list"></div>
     </section>
 
-    <!-- Section E: Reset -->
+    <!-- Section E: Settings -->
+    <section>
+      <h2>Settings</h2>
+      <div class="score-form">
+        <div class="field">
+          <label for="max-players">Simultaneous boards</label>
+          <input type="number" id="max-players" min="1" max="12" value="3" style="width:80px;">
+        </div>
+        <button class="btn btn-primary" id="save-settings-btn">Save</button>
+      </div>
+      <p class="text-caption mt-8">Number of players that can play at once (1–12). Default: 3.</p>
+    </section>
+
+    <!-- Section F: Reset -->
     <section>
       <h2>Reset</h2>
       <div class="reset-section">
@@ -208,13 +221,30 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // --- Auto-assign helper: promote next queued player if fewer than 3 playing ---
+    // --- Max players setting ---
+    let maxPlayers = 3;
+
+    onValue(ref(db, 'settings/maxPlayers'), (snapshot) => {
+      maxPlayers = snapshot.exists() ? snapshot.val() : 3;
+      document.getElementById('max-players').value = maxPlayers;
+    });
+
+    document.getElementById('save-settings-btn').addEventListener('click', async () => {
+      const val = parseInt(document.getElementById('max-players').value, 10);
+      if (isNaN(val) || val < 1 || val > 12) {
+        alert('Enter a number between 1 and 12.');
+        return;
+      }
+      await set(ref(db, 'settings/maxPlayers'), val);
+    });
+
+    // --- Auto-assign helper: promote next queued player if fewer than maxPlayers playing ---
     async function autoAssign() {
       const snap = await get(ref(db, 'queue'));
       if (!snap.exists()) return;
       const all = Object.entries(snap.val());
       const playingCount = all.filter(([, v]) => v.status === 'playing').length;
-      if (playingCount >= 3) return;
+      if (playingCount >= maxPlayers) return;
 
       const nextQueued = all
         .filter(([, v]) => v.status === 'queued')
@@ -236,8 +266,8 @@
       const playing = Object.entries(data)
         .filter(([, v]) => v.status === 'playing');
 
-      // Always show 3 slots
-      for (let slot = 0; slot < 3; slot++) {
+      // Always show maxPlayers slots
+      for (let slot = 0; slot < maxPlayers; slot++) {
         if (slot < playing.length) {
           const [id, player] = playing[slot];
           renderPlayerSlot(slot + 1, id, player);

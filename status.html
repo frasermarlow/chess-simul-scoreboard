@@ -149,6 +149,11 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
+    // Read max players setting
+    let maxPlayers = 3;
+    const settingsSnap = await get(ref(db, 'settings/maxPlayers'));
+    if (settingsSnap.exists()) maxPlayers = settingsSnap.val();
+
     // Check localStorage for player identity
     const playerId = localStorage.getItem('chessPlayerId');
     const playerName = localStorage.getItem('chessPlayerName');
@@ -326,7 +331,7 @@
           const allEntries = Object.entries(allQueue);
           const playingNow = allEntries.filter(([, v]) => v.status === 'playing').length;
 
-          if (playingNow < 3) {
+          if (playingNow < maxPlayers) {
             const nextQueued = allEntries
               .filter(([, v]) => v.status === 'queued')
               .sort((a, b) => a[1].queuedAt - b[1].queuedAt);

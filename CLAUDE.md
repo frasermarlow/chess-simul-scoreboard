@@ -30,12 +30,14 @@ There is no package.json, no bundler, no test runner, and no linter. Files are s
 ### Firebase Data Model
 
 ```
-/queue/<playerId>    → { name, status, queuedAt, moves }
-/scores/<scoreId>    → { name, moves, completedAt }
+/queue/<playerId>       → { name, status, queuedAt, moves }
+/scores/<scoreId>       → { name, moves, outcome, rankingScore, completedAt }
+/settings/maxPlayers    → number (1-12, default 3)
 ```
 
 - `status` values: `"queued"` | `"playing"` | `"completed"`
-- Up to 3 players can have `"playing"` status simultaneously (no board assignment — facilitators manage physical boards)
+- `outcome` values: `"lost"` | `"won"` | `"drew"`
+- Number of simultaneous players is configurable via admin settings (default 3, range 1–12)
 - All pages use Firebase `onValue()` listeners for real-time sync
 - Firebase config lives in `firebase-config.js`
 
