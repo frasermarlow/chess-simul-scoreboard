@@ -12,9 +12,10 @@ body.scoreboard {
 }
 
 .scoreboard-logo {
-  width: 500px;
+  width: 400px;
   max-width: 80vw;
   margin: 0 auto;
+  padding-bottom: 4px;
 }
 
 .scoreboard-title {
