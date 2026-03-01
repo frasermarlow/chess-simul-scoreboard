@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css?v=2">
-  <link rel="stylesheet" href="scoreboard.css?v=6">
+  <link rel="stylesheet" href="scoreboard.css?v=7">
 </head>
 <body class="scoreboard">
 
@@ -71,9 +71,11 @@
           scores.push(data[key]);
         }
       }
-      // Sort: moves DESC, then completedAt ASC
+      // Sort: rankingScore DESC (falls back to moves for old entries), then completedAt ASC
       scores.sort((a, b) => {
-        if (b.moves !== a.moves) return b.moves - a.moves;
+        const aRank = a.rankingScore != null ? a.rankingScore : a.moves;
+        const bRank = b.rankingScore != null ? b.rankingScore : b.moves;
+        if (bRank !== aRank) return bRank - aRank;
         return a.completedAt - b.completedAt;
       });
       renderScoreboard(scores);
@@ -87,7 +89,8 @@
       // Determine if there's a tie for 3rd place
       let winnersCount = 3;
       let hasTie = false;
-      if (scores.length >= 4 && scores[2].moves === scores[3].moves) {
+      const rankOf = s => s.rankingScore != null ? s.rankingScore : s.moves;
+      if (scores.length >= 4 && rankOf(scores[2]) === rankOf(scores[3])) {
         winnersCount = 4;
         hasTie = true;
       }
@@ -96,10 +99,11 @@
       let winnersHTML = '';
       for (let i = 0; i < winnersCount; i++) {
         if (i < scores.length) {
+          const outcomeIcon = scores[i].outcome === 'won' ? ' 👑' : scores[i].outcome === 'drew' ? ' <span style="opacity:0.5">👑</span>' : '';
           winnersHTML += `
             <div class="winner-row">
               <span class="winner-rank">${i + 1}.</span>
-              <span class="winner-name">${escapeHTML(scores[i].name)}</span>
+              <span class="winner-name">${escapeHTML(scores[i].name)}${outcomeIcon}</span>
               <span class="winner-moves">${scores[i].moves} moves</span>
             </div>`;
         } else {
@@ -126,10 +130,11 @@
       const runnersStart = winnersCount;
       const runnersEnd = Math.min(runnersStart + 7, scores.length);
       for (let i = runnersStart; i < runnersEnd; i++) {
+        const rOutcomeIcon = scores[i].outcome === 'won' ? ' 👑' : scores[i].outcome === 'drew' ? ' <span style="opacity:0.5">👑</span>' : '';
         runnersHTML += `
           <div class="runner-row">
             <span class="runner-rank">${i + 1}.</span>
-            <span class="runner-name">${escapeHTML(scores[i].name)}</span>
+            <span class="runner-name">${escapeHTML(scores[i].name)}${rOutcomeIcon}</span>
             <span class="runner-moves">${scores[i].moves} moves</span>
           </div>`;
       }

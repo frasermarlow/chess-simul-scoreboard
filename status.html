@@ -272,6 +272,8 @@
         await set(scoreRef, {
           name: name,
           moves: moves,
+          outcome: 'lost',
+          rankingScore: moves,
           completedAt: Date.now()
         });
 
