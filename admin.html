@@ -298,6 +298,7 @@
         removeBtn.className = 'btn btn-danger';
         removeBtn.textContent = 'Remove';
         removeBtn.addEventListener('click', async () => {
+          if (!confirm('Remove ' + player.name + ' from the queue?')) return;
           await remove(ref(db, 'queue/' + id));
         });
 
