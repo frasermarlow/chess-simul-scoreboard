@@ -117,7 +117,7 @@ body.scoreboard {
 .runner-row {
   display: flex;
   align-items: center;
-  padding: 0.7vh 2vw;
+  padding: 0.3vh 2vw;
   border-bottom: 1px solid #E8E8E8;
 }
 
@@ -144,6 +144,47 @@ body.scoreboard {
   font-size: clamp(0.8rem, 1.2vw, 1rem);
   color: #5E7493;
   white-space: nowrap;
+}
+
+/* Next Up Section */
+.next-up-section {
+  width: 100%;
+}
+
+.next-up-section .section-label {
+  font-size: clamp(0.55rem, 0.9vw, 0.75rem);
+  margin-bottom: 0.5vh;
+}
+
+.next-up-row {
+  display: flex;
+  align-items: center;
+  padding: 0.25vh 1.5vw;
+  font-family: 'Lexend', sans-serif;
+  font-size: clamp(0.75rem, 1.1vw, 0.95rem);
+  color: #5E7493;
+}
+
+.next-up-rank {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: clamp(0.7rem, 1vw, 0.85rem);
+  color: #808080;
+  min-width: 2vw;
+  text-align: center;
+}
+
+.next-up-name {
+  font-weight: 500;
+  color: #082247;
+  padding-left: 0.8vw;
+}
+
+.next-up-empty {
+  font-family: 'Lexend', sans-serif;
+  font-size: clamp(0.7rem, 1vw, 0.85rem);
+  color: #C0C7D0;
+  padding: 0.25vh 1.5vw;
+  font-style: italic;
 }
 
 /* Bottom Strip — Currently Playing & Queue */
