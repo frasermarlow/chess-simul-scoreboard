@@ -15,7 +15,7 @@ body.scoreboard {
   width: 400px;
   max-width: 80vw;
   margin: 0 auto;
-  padding-bottom: 4px;
+  padding: 12px 0 12px 0;
 }
 
 .scoreboard-title {
@@ -73,10 +73,10 @@ body.scoreboard {
 .winner-name {
   flex: 1;
   font-family: 'Lexend', sans-serif;
-  font-size: clamp(1.6rem, 3vw, 2.8rem);
+  font-size: clamp(1.2rem, 2vw, 2rem);
   font-weight: 700;
   color: #082247;
-  padding: 0 1.5vw;
+  padding: 0 1vw;
   text-transform: uppercase;
 }
 
@@ -159,24 +159,37 @@ body.scoreboard {
 .next-up-row {
   display: flex;
   align-items: center;
-  padding: 0.25vh 1.5vw;
+  padding: 1vh 1.5vw;
   font-family: 'Lexend', sans-serif;
   font-size: clamp(0.75rem, 1.1vw, 0.95rem);
   color: #5E7493;
 }
 
+.next-up-wrapper {
+border-radius: 8px;
+background-color: #dcdcdc;
+}
+
 .next-up-rank {
   font-family: 'Share Tech Mono', monospace;
-  font-size: clamp(0.7rem, 1vw, 0.85rem);
-  color: #808080;
+  font-size: clamp(1.2rem, 1vw, 1.2rem);
+  color: #b3b3b3;
   min-width: 2vw;
   text-align: center;
 }
 
 .next-up-name {
   font-weight: 500;
+  font-size: clamp(1.2rem, 1vw, 1.2rem);
   color: #082247;
   padding-left: 0.8vw;
+}
+
+.next-up-more {
+  font-family: 'Lexend', sans-serif;
+  font-size: clamp(0.7rem, 1vw, 0.85rem);
+  color: #ffffff;
+  padding: 0.5vh 1.5vw;
 }
 
 .next-up-empty {

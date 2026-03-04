@@ -189,14 +189,16 @@
         nextUpEl.innerHTML = '<div class="next-up-empty">No one in queue</div>';
       } else {
         let html = '';
-        for (let i = 0; i < Math.min(3, queued.length); i++) {
+        html += '<div class="next-up-wrapper">';
+        for (let i = 0; i < Math.min(5, queued.length); i++) {
           html += `<div class="next-up-row">
             <span class="next-up-rank">${i + 1}.</span>
             <span class="next-up-name">${escapeHTML(queued[i].name)}</span>
           </div>`;
         }
-        if (queued.length > 3) {
-          html += `<div class="next-up-empty">+${queued.length - 3} more</div>`;
+        html += '</div">';
+        if (queued.length > 4) {
+          html += `<div class="next-up-more">+${queued.length - 5} more</div>`;
         }
         nextUpEl.innerHTML = html;
       }
