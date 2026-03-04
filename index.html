@@ -19,11 +19,17 @@
     <span class="chess-icon">&#9823;</span>
   </h1>
 
-  <!-- Winners Section -->
-  <div class="winners-section">
-    <div class="section-label">&#127942; WINNERS &mdash; TOP 3 <span style="font-weight:400; opacity:0.7;">(Win: 50 bonus points | Draw: 25 bonus points)</span></div>
-    <div id="winners-list"></div>
-    <div id="tie-note" class="tie-note hidden"></div>
+  <!-- Winners + Next Up Row -->
+  <div style="display: flex; gap: 2vw; width: 100%; max-width: 900px; margin-bottom: 1.5vh; align-items: flex-start;">
+    <div class="winners-section" style="flex: 2; margin-bottom: 0;">
+      <div class="section-label">&#127942; WINNERS &mdash; TOP 3 <span style="font-weight:400; opacity:0.7;">(Win: 50 bonus points | Draw: 25 bonus points)</span></div>
+      <div id="winners-list"></div>
+      <div id="tie-note" class="tie-note hidden"></div>
+    </div>
+    <div class="next-up-section" style="flex: 1;">
+      <div class="section-label">Next Up</div>
+      <div id="next-up-list"></div>
+    </div>
   </div>
 
   <!-- Runners Up + QR Code Row -->
@@ -33,10 +39,6 @@
       <div id="runners-list"></div>
     </div>
     <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 1vh;">
-      <div class="next-up-section">
-        <div class="section-label">Next Up</div>
-        <div id="next-up-list"></div>
-      </div>
       <a href="https://frasermarlow.github.io/chess-simul-scoreboard/join.html"><img src="chess-simul.png" alt="Scan to join" style="width: 100%; height: auto; border-radius: 8px;"></a>
       <span style="font-family: 'Lexend', sans-serif; font-weight: 600; font-size: clamp(0.7rem, 1.2vw, 1rem); color: #5E7493; text-align: center;">Scan to join!</span>
     </div>
