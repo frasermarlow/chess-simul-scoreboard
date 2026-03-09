@@ -77,10 +77,10 @@
           scores.push(data[key]);
         }
       }
-      // Sort: rankingScore DESC (falls back to timeRemaining/moves for old entries), then completedAt ASC
+      // Sort: less time remaining = better (player lasted longer), bonus boosts rank
       scores.sort((a, b) => {
-        const aRank = a.rankingScore != null ? a.rankingScore : (a.timeRemaining != null ? a.timeRemaining : legacyMovesToSeconds(a.moves));
-        const bRank = b.rankingScore != null ? b.rankingScore : (b.timeRemaining != null ? b.timeRemaining : legacyMovesToSeconds(b.moves));
+        const aRank = computeRank(a);
+        const bRank = computeRank(b);
         if (bRank !== aRank) return bRank - aRank;
         return a.completedAt - b.completedAt;
       });
@@ -102,6 +102,13 @@
       return mins * 60 + secs;
     }
 
+    // Compute rank: lower time remaining = better, bonus boosts rank
+    function computeRank(score) {
+      const time = score.timeRemaining != null ? score.timeRemaining : legacyMovesToSeconds(score.moves);
+      const bonus = score.outcome === 'won' ? 50 : score.outcome === 'drew' ? 25 : 0;
+      return bonus - time;
+    }
+
     function renderScoreboard(scores) {
       const winnersList = document.getElementById('winners-list');
       const runnersList = document.getElementById('runners-list');
@@ -110,8 +117,7 @@
       // Determine if there's a tie for 3rd place
       let winnersCount = 3;
       let hasTie = false;
-      const rankOf = s => s.rankingScore != null ? s.rankingScore : (s.timeRemaining || s.moves || 0);
-      if (scores.length >= 4 && rankOf(scores[2]) === rankOf(scores[3])) {
+      if (scores.length >= 4 && computeRank(scores[2]) === computeRank(scores[3])) {
         winnersCount = 4;
         hasTie = true;
       }

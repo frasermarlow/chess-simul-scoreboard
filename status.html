@@ -350,7 +350,7 @@
           name: name,
           timeRemaining: timeRemaining,
           outcome: selectedOutcome,
-          rankingScore: timeRemaining + bonus,
+          rankingScore: bonus - timeRemaining,
           completedAt: Date.now()
         });
 

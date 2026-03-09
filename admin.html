@@ -371,7 +371,7 @@
             name: player.name,
             timeRemaining: timeRemaining,
             outcome: outcome,
-            rankingScore: timeRemaining + bonus,
+            rankingScore: bonus - timeRemaining,
             completedAt: Date.now()
           });
           await update(ref(db, 'queue/' + id), {
@@ -483,6 +483,13 @@
       return mins * 60 + secs;
     }
 
+    // Compute rank: lower time remaining = better, bonus boosts rank
+    function computeRank(score) {
+      const time = score.timeRemaining != null ? score.timeRemaining : legacyMovesToSeconds(score.moves);
+      const bonus = score.outcome === 'won' ? 50 : score.outcome === 'drew' ? 25 : 0;
+      return bonus - time;
+    }
+
     // --- Section C: Score Entry ---
     document.getElementById('score-submit-btn').addEventListener('click', async () => {
       const nameInput = document.getElementById('score-name');
@@ -512,7 +519,7 @@
           name: name,
           timeRemaining: timeRemaining,
           outcome: outcome,
-          rankingScore: timeRemaining + bonus,
+          rankingScore: bonus - timeRemaining,
           completedAt: Date.now()
         });
         nameInput.value = '';
@@ -533,8 +540,8 @@
       const scores = Object.entries(data)
         .map(([id, s]) => ({ id, ...s }))
         .sort((a, b) => {
-          const aRank = a.rankingScore != null ? a.rankingScore : (a.timeRemaining != null ? a.timeRemaining : legacyMovesToSeconds(a.moves));
-          const bRank = b.rankingScore != null ? b.rankingScore : (b.timeRemaining != null ? b.timeRemaining : legacyMovesToSeconds(b.moves));
+          const aRank = computeRank(a);
+          const bRank = computeRank(b);
           if (bRank !== aRank) return bRank - aRank;
           return a.completedAt - b.completedAt;
         });
@@ -614,7 +621,7 @@
             await update(ref(db, 'scores/' + score.id), {
               timeRemaining: newTime,
               outcome: newOutcome,
-              rankingScore: newTime + newBonus
+              rankingScore: newBonus - newTime
             });
           } catch (err) {
             alert('Error: ' + err.message);
@@ -663,8 +670,8 @@
     function buildScoresCSV(scoresData) {
       const rows = [['Rank', 'Name', 'Time Remaining', 'Outcome', 'Ranking Score', 'Completed At']];
       const scores = Object.values(scoresData || {}).sort((a, b) => {
-        const aRank = a.rankingScore != null ? a.rankingScore : (a.timeRemaining != null ? a.timeRemaining : legacyMovesToSeconds(a.moves));
-        const bRank = b.rankingScore != null ? b.rankingScore : (b.timeRemaining != null ? b.timeRemaining : legacyMovesToSeconds(b.moves));
+        const aRank = computeRank(a);
+        const bRank = computeRank(b);
         if (bRank !== aRank) return bRank - aRank;
         return a.completedAt - b.completedAt;
       });
@@ -675,7 +682,7 @@
           escapeCSV(s.name),
           formatTime(timeVal),
           s.outcome || 'lost',
-          s.rankingScore != null ? s.rankingScore : timeVal,
+          computeRank(s),
           s.completedAt ? new Date(s.completedAt).toISOString() : ''
         ]);
       });
