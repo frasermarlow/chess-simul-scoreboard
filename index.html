@@ -22,7 +22,7 @@
   <!-- Winners + Next Up Row -->
   <div style="display: flex; gap: 2vw; width: 100%; max-width: 900px; margin-bottom: 1.5vh; align-items: flex-start;">
     <div class="winners-section" style="flex: 2; margin-bottom: 0;">
-      <div class="section-label">&#127942; WINNERS &mdash; TOP 3 <span style="font-weight:400; opacity:0.7;">(Win: 50 bonus points | Draw: 25 bonus points)</span></div>
+      <div class="section-label">&#127942; WINNERS &mdash; TOP 3 <span style="font-weight:400; opacity:0.7;">(Time remaining on clock | Win: +50 | Draw: +25)</span></div>
       <div id="winners-list"></div>
       <div id="tie-note" class="tie-note hidden"></div>
     </div>
@@ -77,15 +77,30 @@
           scores.push(data[key]);
         }
       }
-      // Sort: rankingScore DESC (falls back to moves for old entries), then completedAt ASC
+      // Sort: rankingScore DESC (falls back to timeRemaining/moves for old entries), then completedAt ASC
       scores.sort((a, b) => {
-        const aRank = a.rankingScore != null ? a.rankingScore : a.moves;
-        const bRank = b.rankingScore != null ? b.rankingScore : b.moves;
+        const aRank = a.rankingScore != null ? a.rankingScore : (a.timeRemaining != null ? a.timeRemaining : legacyMovesToSeconds(a.moves));
+        const bRank = b.rankingScore != null ? b.rankingScore : (b.timeRemaining != null ? b.timeRemaining : legacyMovesToSeconds(b.moves));
         if (bRank !== aRank) return bRank - aRank;
         return a.completedAt - b.completedAt;
       });
       renderScoreboard(scores);
     });
+
+    function formatTime(totalSeconds) {
+      if (totalSeconds == null) return '0:00';
+      const mins = Math.floor(totalSeconds / 60);
+      const secs = totalSeconds % 60;
+      return mins + ':' + String(secs).padStart(2, '0');
+    }
+
+    // Convert legacy moves value (e.g. 350 → 3min 50sec = 230s)
+    function legacyMovesToSeconds(moves) {
+      if (moves == null) return 0;
+      const mins = Math.floor(moves / 100);
+      const secs = moves % 100;
+      return mins * 60 + secs;
+    }
 
     function renderScoreboard(scores) {
       const winnersList = document.getElementById('winners-list');
@@ -95,7 +110,7 @@
       // Determine if there's a tie for 3rd place
       let winnersCount = 3;
       let hasTie = false;
-      const rankOf = s => s.rankingScore != null ? s.rankingScore : s.moves;
+      const rankOf = s => s.rankingScore != null ? s.rankingScore : (s.timeRemaining || s.moves || 0);
       if (scores.length >= 4 && rankOf(scores[2]) === rankOf(scores[3])) {
         winnersCount = 4;
         hasTie = true;
@@ -106,18 +121,19 @@
       for (let i = 0; i < winnersCount; i++) {
         if (i < scores.length) {
           const outcomeIcon = scores[i].outcome === 'won' ? ' 👑' : scores[i].outcome === 'drew' ? ' <span style="font-weight:700; color:#5E7493;">=</span>' : '';
+          const timeVal = scores[i].timeRemaining != null ? scores[i].timeRemaining : legacyMovesToSeconds(scores[i].moves);
           winnersHTML += `
             <div class="winner-row">
               <span class="winner-rank">${i + 1}.</span>
               <span class="winner-name">${escapeHTML(scores[i].name)}${outcomeIcon}</span>
-              <span class="winner-moves">${scores[i].moves} moves</span>
+              <span class="winner-moves">${formatTime(timeVal)}</span>
             </div>`;
         } else {
           winnersHTML += `
             <div class="winner-row placeholder">
               <span class="winner-rank">${i + 1}.</span>
               <span class="winner-name">---</span>
-              <span class="winner-moves">--- moves</span>
+              <span class="winner-moves">--:--</span>
             </div>`;
         }
       }
@@ -137,11 +153,12 @@
       const runnersEnd = Math.min(runnersStart + 7, scores.length);
       for (let i = runnersStart; i < runnersEnd; i++) {
         const rOutcomeIcon = scores[i].outcome === 'won' ? ' 👑' : scores[i].outcome === 'drew' ? ' <span style="font-weight:700; color:#5E7493;">=</span>' : '';
+        const timeVal = scores[i].timeRemaining != null ? scores[i].timeRemaining : legacyMovesToSeconds(scores[i].moves);
         runnersHTML += `
           <div class="runner-row">
             <span class="runner-rank">${i + 1}.</span>
             <span class="runner-name">${escapeHTML(scores[i].name)}${rOutcomeIcon}</span>
-            <span class="runner-moves">${scores[i].moves} moves</span>
+            <span class="runner-moves">${formatTime(timeVal)}</span>
           </div>`;
       }
       runnersList.innerHTML = runnersHTML;

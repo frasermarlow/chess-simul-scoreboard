@@ -62,12 +62,33 @@
       color: rgba(255, 255, 255, 0.9);
     }
 
-    .moves-input {
+    .time-input-group {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .time-input-group input {
       font-size: 3rem !important;
       text-align: center;
       font-weight: 700;
-      letter-spacing: 4px;
-      padding: 20px 16px !important;
+      letter-spacing: 2px;
+      padding: 20px 8px !important;
+      width: 100px;
+    }
+
+    .time-input-group .time-sep {
+      font-size: 3rem;
+      font-weight: 700;
+      color: var(--text-heading);
+    }
+
+    .time-input-group .time-label {
+      font-size: 0.75rem;
+      color: var(--text-caption);
+      text-align: center;
     }
 
     .game-over-section h1 {
@@ -123,11 +144,21 @@
       <div id="playing-entry" class="hidden" style="width:100%;">
         <div class="game-over-section text-center mb-24" style="width:100%;">
           <h1 class="mb-8">Game Over!</h1>
-          <p class="text-body">How many moves did you survive?</p>
+          <p class="text-body">Time remaining on the chess master's clock?</p>
         </div>
 
-        <label for="moves-input" class="mb-8" style="display:block;font-weight:600;text-align:center;">Move Count</label>
-        <input type="number" id="moves-input" class="moves-input mb-8 w-full" min="0" max="999" placeholder="0" inputmode="numeric">
+        <label class="mb-8" style="display:block;font-weight:600;text-align:center;">Time Remaining</label>
+        <div class="time-input-group mb-8">
+          <div>
+            <input type="number" id="time-minutes" min="0" max="99" placeholder="0" inputmode="numeric">
+            <div class="time-label">min</div>
+          </div>
+          <span class="time-sep">:</span>
+          <div>
+            <input type="number" id="time-seconds" min="0" max="59" placeholder="00" inputmode="numeric">
+            <div class="time-label">sec</div>
+          </div>
+        </div>
         <div style="display:flex; gap:8px; width:100%; margin-top:16px;">
           <button id="btn-won" class="btn btn-secondary w-full" style="flex:1;" type="button">👑 I Won!</button>
           <button id="btn-drew" class="btn btn-secondary w-full" style="flex:1;" type="button">🤝 I Drew!</button>
@@ -170,7 +201,8 @@
     const gotItBtn = document.getElementById('got-it-btn');
     const playingAlert = document.getElementById('playing-alert');
     const playingEntry = document.getElementById('playing-entry');
-    const movesInput = document.getElementById('moves-input');
+    const timeMinutes = document.getElementById('time-minutes');
+    const timeSeconds = document.getElementById('time-seconds');
     const submitBtn = document.getElementById('submit-btn');
     const submitError = document.getElementById('submit-error');
 
@@ -193,7 +225,7 @@
       playingAlert.style.display = 'none';
       playingEntry.classList.remove('hidden');
       playingEntry.style.display = '';
-      movesInput.focus();
+      timeMinutes.focus();
     });
 
     // Immediately read player status from Firebase on load
@@ -287,16 +319,20 @@
     submitBtn.addEventListener('click', async () => {
       submitError.classList.add('hidden');
 
-      const movesVal = movesInput.value.trim();
-      if (movesVal === '' || isNaN(parseInt(movesVal, 10))) {
-        submitError.textContent = 'Please enter a valid number of moves.';
+      const minVal = timeMinutes.value.trim();
+      const secVal = timeSeconds.value.trim();
+      const mins = minVal === '' ? 0 : parseInt(minVal, 10);
+      const secs = secVal === '' ? 0 : parseInt(secVal, 10);
+
+      if (isNaN(mins) || isNaN(secs) || mins < 0 || secs < 0 || secs > 59) {
+        submitError.textContent = 'Please enter a valid time (minutes 0+, seconds 0–59).';
         submitError.classList.remove('hidden');
         return;
       }
 
-      const moves = parseInt(movesVal, 10);
-      if (moves < 0 || moves > 999) {
-        submitError.textContent = 'Moves must be between 0 and 999.';
+      const timeRemaining = mins * 60 + secs;
+      if (timeRemaining === 0 && minVal === '' && secVal === '') {
+        submitError.textContent = 'Please enter the time remaining.';
         submitError.classList.remove('hidden');
         return;
       }
@@ -312,16 +348,16 @@
         const scoreRef = push(ref(db, 'scores'));
         await set(scoreRef, {
           name: name,
-          moves: moves,
+          timeRemaining: timeRemaining,
           outcome: selectedOutcome,
-          rankingScore: moves + bonus,
+          rankingScore: timeRemaining + bonus,
           completedAt: Date.now()
         });
 
         // 2. Update player status to completed
         await update(ref(db, 'queue/' + playerId), {
           status: 'completed',
-          moves: moves
+          timeRemaining: timeRemaining
         });
 
         // 3. Auto-assign: if fewer than 3 playing, promote next queued player
