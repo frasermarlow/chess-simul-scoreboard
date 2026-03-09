@@ -35,7 +35,7 @@
   <!-- Runners Up + QR Code Row -->
   <div style="display: flex; gap: 2vw; width: 100%; max-width: 900px; margin-bottom: 1.5vh; align-items: flex-start;">
     <div class="runners-section" style="flex: 2; margin-bottom: 0;">
-      <div class="section-label">RUNNERS UP</div>
+      <div class="section-label">RUNNERS UP <span id="games-played-label"></span></div>
       <div id="runners-list"></div>
     </div>
     <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 1vh;">
@@ -116,6 +116,8 @@
       const winnersList = document.getElementById('winners-list');
       const runnersList = document.getElementById('runners-list');
       const tieNote = document.getElementById('tie-note');
+      const gamesLabel = document.getElementById('games-played-label');
+      gamesLabel.textContent = scores.length > 0 ? '(of ' + scores.length + ' games played)' : '';
 
       // Determine if there's a tie for 3rd place
       let winnersCount = 3;
