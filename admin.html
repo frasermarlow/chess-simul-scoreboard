@@ -371,7 +371,7 @@
             name: player.name,
             timeRemaining: timeRemaining,
             outcome: outcome,
-            rankingScore: bonus - timeRemaining,
+            rankingScore: outcome === 'won' ? 10000 + timeRemaining : (outcome === 'drew' ? 5000 - timeRemaining : -timeRemaining),
             completedAt: Date.now()
           });
           await update(ref(db, 'queue/' + id), {
@@ -483,11 +483,14 @@
       return mins * 60 + secs;
     }
 
-    // Compute rank: lower time remaining = better, bonus boosts rank
+    // Compute rank:
+    //   Won: always on top, more time remaining = faster win = higher rank
+    //   Drew/Lost: less time remaining = lasted longer = higher rank
     function computeRank(score) {
       const time = score.timeRemaining != null ? score.timeRemaining : legacyMovesToSeconds(score.moves);
-      const bonus = score.outcome === 'won' ? 50 : score.outcome === 'drew' ? 25 : 0;
-      return bonus - time;
+      if (score.outcome === 'won') return 10000 + time;
+      if (score.outcome === 'drew') return 5000 - time;
+      return -time;
     }
 
     // --- Section C: Score Entry ---
@@ -519,7 +522,7 @@
           name: name,
           timeRemaining: timeRemaining,
           outcome: outcome,
-          rankingScore: bonus - timeRemaining,
+          rankingScore: outcome === 'won' ? 10000 + timeRemaining : (outcome === 'drew' ? 5000 - timeRemaining : -timeRemaining),
           completedAt: Date.now()
         });
         nameInput.value = '';
@@ -621,7 +624,7 @@
             await update(ref(db, 'scores/' + score.id), {
               timeRemaining: newTime,
               outcome: newOutcome,
-              rankingScore: newBonus - newTime
+              rankingScore: newOutcome === 'won' ? 10000 + newTime : (newOutcome === 'drew' ? 5000 - newTime : -newTime)
             });
           } catch (err) {
             alert('Error: ' + err.message);

@@ -350,7 +350,7 @@
           name: name,
           timeRemaining: timeRemaining,
           outcome: selectedOutcome,
-          rankingScore: bonus - timeRemaining,
+          rankingScore: selectedOutcome === 'won' ? 10000 + timeRemaining : (selectedOutcome === 'drew' ? 5000 - timeRemaining : -timeRemaining),
           completedAt: Date.now()
         });
 
