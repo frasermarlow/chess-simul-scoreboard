@@ -557,9 +557,15 @@
         return;
       }
 
-      scores.forEach((score) => {
+      scores.forEach((score, index) => {
         const item = document.createElement('div');
         item.className = 'card score-item';
+
+        const rankSpan = document.createElement('span');
+        rankSpan.style.fontWeight = '700';
+        rankSpan.style.minWidth = '40px';
+        rankSpan.style.color = 'var(--text-caption)';
+        rankSpan.textContent = (index + 1) + '/' + scores.length;
 
         const nameSpan = document.createElement('span');
         nameSpan.className = 'score-name';
@@ -640,6 +646,7 @@
           await remove(ref(db, 'scores/' + score.id));
         });
 
+        item.appendChild(rankSpan);
         item.appendChild(nameSpan);
         item.appendChild(timeGroup);
         item.appendChild(outcomeSelect);
